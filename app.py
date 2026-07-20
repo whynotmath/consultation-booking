@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+import re
 from zoneinfo import ZoneInfo
 
 import requests
@@ -11,6 +12,7 @@ START_DATE = date(2026, 7, 27)
 END_DATE = date(2026, 8, 7)
 START_HOURS = (12, 13, 14, 15)
 TIMEZONE = ZoneInfo("Asia/Seoul")
+BACKEND_VERSION = "2026-07-20-v4"
 
 
 def weekdays_between(start: date, end: date) -> list[date]:
@@ -34,6 +36,13 @@ def slot_label(hour: int) -> str:
 
 def script_url() -> str:
     return str(st.secrets["apps_script_url"]).strip()
+
+
+def backend_is_current() -> bool:
+    response = requests.get(script_url(), params={"action": "status"}, timeout=10)
+    response.raise_for_status()
+    payload = response.json()
+    return payload.get("ok") is True and payload.get("version") == BACKEND_VERSION
 
 
 def reserved_slots(selected_date: date) -> set[str]:
@@ -63,6 +72,14 @@ try:
     script_url()
 except Exception:
     st.error("상담 신청 저장소가 아직 설정되지 않았습니다.")
+    st.stop()
+
+try:
+    if not backend_is_current():
+        st.error("Apps Script가 이전 버전입니다. 최신 Code.gs를 새로 배포한 뒤 새 /exec URL을 연결해 주세요.")
+        st.stop()
+except Exception:
+    st.error("Apps Script 연결을 확인할 수 없습니다. 최신 배포 URL인지 확인해 주세요.")
     st.stop()
 
 student_name = st.text_input("학생 이름", placeholder="학생 이름을 정확히 입력해 주세요.", max_chars=20)
@@ -103,7 +120,12 @@ else:
         max_chars=100,
     )
 
-phone = st.text_input("연락처", placeholder="전화 상담 또는 일정 확인에 사용할 번호")
+phone = st.text_input(
+    "연락처",
+    placeholder="010-0000-0000",
+    max_chars=13,
+    help="010-0000-0000 형식으로 입력해 주세요.",
+)
 note = st.text_area("상담 희망 내용", placeholder="상담하고 싶은 내용을 간단히 적어 주세요.", height=120)
 consent = st.checkbox("상담 신청을 위해 위 개인정보를 제공하는 데 동의합니다.")
 submitted = st.button("상담 신청", type="primary", use_container_width=True)
@@ -113,6 +135,8 @@ if submitted:
         st.error("학생 이름을 입력해 주세요.")
     elif not phone.strip():
         st.error("연락처를 입력해 주세요.")
+    elif not re.fullmatch(r"010-\d{4}-\d{4}", phone.strip()):
+        st.error("연락처를 010-0000-0000 형식으로 입력해 주세요.")
     elif schedule_type == "정해진 시간에서 선택" and selected_time is None:
         st.error("신청 가능한 날짜와 시간을 선택해 주세요.")
     elif schedule_type == "다른 일정 요청" and not custom_schedule.strip():
