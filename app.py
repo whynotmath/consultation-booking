@@ -83,7 +83,6 @@ except Exception:
     st.stop()
 
 student_name = st.text_input("학생 이름", placeholder="학생 이름을 정확히 입력해 주세요.", max_chars=20)
-st.caption("학번은 입력한 이름을 비공개 명렬표와 확인하여 자동으로 기록됩니다.")
 
 applicant = st.radio("신청자", ["학생 본인", "부", "모", "부·모 모두"], horizontal=True)
 if applicant != "학생 본인":
