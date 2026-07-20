@@ -12,7 +12,7 @@ START_DATE = date(2026, 7, 27)
 END_DATE = date(2026, 8, 7)
 START_HOURS = (12, 13, 14, 15)
 TIMEZONE = ZoneInfo("Asia/Seoul")
-BACKEND_VERSION = "2026-07-20-v4"
+BACKEND_VERSION = "2026-07-20-v5"
 
 
 def weekdays_between(start: date, end: date) -> list[date]:
@@ -42,7 +42,11 @@ def backend_is_current() -> bool:
     response = requests.get(script_url(), params={"action": "status"}, timeout=10)
     response.raise_for_status()
     payload = response.json()
-    return payload.get("ok") is True and payload.get("version") == BACKEND_VERSION
+    return (
+        payload.get("ok") is True
+        and payload.get("version") == BACKEND_VERSION
+        and payload.get("roster_ready") is True
+    )
 
 
 def reserved_slots(selected_date: date) -> set[str]:
@@ -76,7 +80,7 @@ except Exception:
 
 try:
     if not backend_is_current():
-        st.error("Apps Script가 이전 버전입니다. 최신 Code.gs를 새로 배포한 뒤 새 /exec URL을 연결해 주세요.")
+        st.error("Apps Script 또는 학생 명렬표 연결이 올바르지 않습니다. 최신 Code.gs를 새로 배포한 뒤 새 /exec URL을 연결해 주세요.")
         st.stop()
 except Exception:
     st.error("Apps Script 연결을 확인할 수 없습니다. 최신 배포 URL인지 확인해 주세요.")
