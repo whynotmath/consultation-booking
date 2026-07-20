@@ -53,7 +53,12 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const data = JSON.parse((e.postData || {}).contents || '{}');
-    if (!ALLOWED_DATES.includes(data.date) || !ALLOWED_TIMES.includes(data.time)) {
+    const isCustom = data.schedule_type === '다른 일정 요청';
+    const customSchedule = safeText(data.custom_schedule, 100);
+    if (isCustom && !customSchedule) {
+      return jsonResponse({ok: false, message: '기타 희망 일정을 입력해 주세요.'});
+    }
+    if (!isCustom && (!ALLOWED_DATES.includes(data.date) || !ALLOWED_TIMES.includes(data.time))) {
       return jsonResponse({ok: false, message: '허용되지 않은 상담 날짜 또는 시간입니다.'});
     }
     if (!ALLOWED_APPLICANTS.includes(data.applicant) || !ALLOWED_METHODS.includes(data.method)) {
@@ -69,13 +74,14 @@ function doPost(e) {
     lock.waitLock(10000);
     const target = sheet();
     const rows = target.getDataRange().getDisplayValues();
-    const duplicate = rows.slice(1).some(row => row[5] === data.date && row[6] === data.time);
+    const duplicate = !isCustom && rows.slice(1).some(row => row[5] === data.date && row[6] === data.time);
     if (duplicate) {
       return jsonResponse({ok: false, message: '방금 다른 신청자가 해당 시간을 선택했습니다.'});
     }
     target.appendRow([
       safeText(data.submitted_at, 30), student.number, student.name, data.applicant,
-      data.method, data.date, data.time, phone, safeText(data.note, 1000)
+      data.method, isCustom ? '' : data.date, isCustom ? '기타 일정 요청' : data.time,
+      phone, safeText(data.note, 1000), customSchedule
     ]);
     return jsonResponse({ok: true});
   } catch (error) {
