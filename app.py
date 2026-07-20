@@ -65,11 +65,8 @@ except Exception:
     st.error("상담 신청 저장소가 아직 설정되지 않았습니다.")
     st.stop()
 
-left, right = st.columns(2)
-with left:
-    student_number = st.text_input("학번", placeholder="예: 30601", max_chars=10)
-with right:
-    student_name = st.text_input("학생 이름", max_chars=20)
+student_name = st.text_input("학생 이름", placeholder="학생 이름을 정확히 입력해 주세요.", max_chars=20)
+st.caption("학번은 입력한 이름을 비공개 명렬표와 확인하여 자동으로 기록됩니다.")
 
 applicant = st.radio("신청자", ["학생 본인", "부", "모", "부·모 모두"], horizontal=True)
 if applicant != "학생 본인":
@@ -98,8 +95,8 @@ consent = st.checkbox("상담 신청을 위해 위 개인정보를 제공하는 
 submitted = st.button("상담 신청", type="primary", use_container_width=True)
 
 if submitted:
-    if not student_number.strip() or not student_name.strip():
-        st.error("학번과 학생 이름을 모두 입력해 주세요.")
+    if not student_name.strip():
+        st.error("학생 이름을 입력해 주세요.")
     elif not phone.strip():
         st.error("연락처를 입력해 주세요.")
     elif selected_time is None:
@@ -109,7 +106,6 @@ if submitted:
     else:
         payload = {
             "submitted_at": datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
-            "student_number": student_number.strip(),
             "student_name": student_name.strip(),
             "applicant": applicant,
             "method": method,
@@ -127,4 +123,3 @@ if submitted:
                 st.error(message or "해당 시간이 이미 신청되었습니다. 다른 시간을 선택해 주세요.")
         except Exception:
             st.error("신청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.")
-
