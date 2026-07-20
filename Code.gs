@@ -74,7 +74,7 @@ function doPost(e) {
     const student = findStudent(studentName);
     const phone = safeText(data.phone, 30);
     if (!student) {
-      return jsonResponse({ok: false, message: '명렬표의 학생 이름과 연락처를 정확히 입력해 주세요.'});
+      return jsonResponse({ok: false, message: '명렬표에 등록되지 않은 학생 이름입니다. 이름을 정확히 확인해 주세요.'});
     }
     if (!/^010-\d{4}-\d{4}$/.test(phone)) {
       return jsonResponse({ok: false, message: '연락처를 010-0000-0000 형식으로 입력해 주세요.'});
