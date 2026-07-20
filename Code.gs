@@ -1,6 +1,7 @@
 const SPREADSHEET_ID = '여기에_관리_시트_ID를_입력하세요';
 const SHEET_NAME = '신청내역';
 const ROSTER_SHEET_NAME = '학생명렬';
+const BACKEND_VERSION = '2026-07-20-v4';
 const ALLOWED_DATES = [
   '2026-07-27', '2026-07-28', '2026-07-29', '2026-07-30', '2026-07-31',
   '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07'
@@ -37,6 +38,9 @@ function safeText(value, maxLength) {
 }
 
 function doGet(e) {
+  if (String((e.parameter || {}).action || '') === 'status') {
+    return jsonResponse({ok: true, version: BACKEND_VERSION});
+  }
   const requestedDate = String((e.parameter || {}).date || '');
   if (!ALLOWED_DATES.includes(requestedDate)) {
     return jsonResponse({ok: false, message: '허용되지 않은 상담 날짜입니다.'});
@@ -67,8 +71,11 @@ function doPost(e) {
     const studentName = safeText(data.student_name, 20);
     const student = findStudent(studentName);
     const phone = safeText(data.phone, 30);
-    if (!student || !phone) {
+    if (!student) {
       return jsonResponse({ok: false, message: '명렬표의 학생 이름과 연락처를 정확히 입력해 주세요.'});
+    }
+    if (!/^010-\d{4}-\d{4}$/.test(phone)) {
+      return jsonResponse({ok: false, message: '연락처를 010-0000-0000 형식으로 입력해 주세요.'});
     }
 
     lock.waitLock(10000);
