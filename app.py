@@ -73,21 +73,35 @@ if applicant != "학생 본인":
     st.info("학부모 상담은 이동 부담을 줄이기 위해 전화 상담을 권장합니다.")
 
 method = st.radio("상담 방식", ["전화 상담", "대면 상담"], horizontal=True)
-available_dates = weekdays_between(START_DATE, END_DATE)
-selected_date = st.selectbox("상담 희망 날짜", available_dates, format_func=date_label)
+schedule_type = st.radio(
+    "상담 일정",
+    ["정해진 시간에서 선택", "다른 일정 요청"],
+    horizontal=True,
+)
 
-try:
-    occupied = reserved_slots(selected_date)
-    available_slots = [slot_label(hour) for hour in START_HOURS if slot_label(hour) not in occupied]
-except Exception:
-    available_slots = []
-    st.error("현재 예약 현황을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.")
-
-if available_slots:
-    selected_time = st.selectbox("상담 희망 시간", available_slots)
+selected_date = None
+selected_time = None
+custom_schedule = ""
+if schedule_type == "정해진 시간에서 선택":
+    available_dates = weekdays_between(START_DATE, END_DATE)
+    selected_date = st.selectbox("상담 희망 날짜", available_dates, format_func=date_label)
+    try:
+        occupied = reserved_slots(selected_date)
+        available_slots = [slot_label(hour) for hour in START_HOURS if slot_label(hour) not in occupied]
+    except Exception:
+        available_slots = []
+        st.error("현재 예약 현황을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.")
+    if available_slots:
+        selected_time = st.selectbox("상담 희망 시간", available_slots)
+    else:
+        st.warning("선택한 날짜에는 남은 상담 시간이 없습니다. 다른 날짜를 선택해 주세요.")
 else:
-    selected_time = None
-    st.warning("선택한 날짜에는 남은 상담 시간이 없습니다. 다른 날짜를 선택해 주세요.")
+    st.info("희망 일정을 적어주시면 선생님이 확인 후 연락드립니다. 이 일정은 자동 확정되지 않습니다.")
+    custom_schedule = st.text_input(
+        "기타 희망 일정",
+        placeholder="예: 7월 29일 오후 5시 이후 또는 평일 오전",
+        max_chars=100,
+    )
 
 phone = st.text_input("연락처", placeholder="전화 상담 또는 일정 확인에 사용할 번호")
 note = st.text_area("상담 희망 내용", placeholder="상담하고 싶은 내용을 간단히 적어 주세요.", height=120)
@@ -99,8 +113,10 @@ if submitted:
         st.error("학생 이름을 입력해 주세요.")
     elif not phone.strip():
         st.error("연락처를 입력해 주세요.")
-    elif selected_time is None:
+    elif schedule_type == "정해진 시간에서 선택" and selected_time is None:
         st.error("신청 가능한 날짜와 시간을 선택해 주세요.")
+    elif schedule_type == "다른 일정 요청" and not custom_schedule.strip():
+        st.error("희망하는 날짜와 시간을 적어 주세요.")
     elif not consent:
         st.error("개인정보 제공 동의가 필요합니다.")
     else:
@@ -109,15 +125,20 @@ if submitted:
             "student_name": student_name.strip(),
             "applicant": applicant,
             "method": method,
-            "date": selected_date.isoformat(),
-            "time": selected_time,
+            "schedule_type": schedule_type,
+            "date": selected_date.isoformat() if selected_date else "",
+            "time": selected_time or "기타 일정 요청",
+            "custom_schedule": custom_schedule.strip(),
             "phone": phone.strip(),
             "note": note.strip(),
         }
         try:
             ok, message = save_request(payload)
             if ok:
-                st.success(f"{date_label(selected_date)} {selected_time} 상담 신청이 완료되었습니다.")
+                if schedule_type == "정해진 시간에서 선택":
+                    st.success(f"{date_label(selected_date)} {selected_time} 상담 신청이 완료되었습니다.")
+                else:
+                    st.success("기타 일정 요청이 접수되었습니다. 선생님이 확인 후 연락드립니다.")
                 st.balloons()
             else:
                 st.error(message or "해당 시간이 이미 신청되었습니다. 다른 시간을 선택해 주세요.")
