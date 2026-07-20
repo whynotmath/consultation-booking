@@ -12,29 +12,25 @@
 
 학부모 신청 화면에는 전화 상담 권장 안내가 표시됩니다.
 
-## Google Sheet 준비
+## Apps Script 배포
 
-1. 상담 신청을 저장할 비공개 Google Sheet를 만듭니다.
-2. Google Cloud에서 서비스 계정을 만들고 Google Sheets API를 활성화합니다.
-3. 서비스 계정 이메일에 해당 시트의 편집 권한을 부여합니다.
-4. `.streamlit/secrets.toml.example`을 참고해 Streamlit Community Cloud의 **Secrets**에 `sheet_url`과 서비스 계정 정보를 등록합니다.
+1. `학생·학부모 상담 신청 관리` Google Sheet를 엽니다.
+2. `확장 프로그램 → Apps Script`를 선택합니다.
+3. 기본 편집기의 내용을 지우고 저장소의 `Code.gs` 내용을 붙여넣은 후 저장합니다.
+4. `배포 → 새 배포 → 유형 선택 → 웹 앱`을 선택합니다.
+5. 실행 사용자는 `나`, 액세스 권한은 `모든 사용자`로 설정합니다.
+6. 권한을 승인한 후 `/exec`로 끝나는 웹 앱 URL을 복사합니다.
 
-서비스 계정 인증키는 GitHub 저장소에 커밋하지 마세요. 실제 `secrets.toml`은 `.gitignore`에 포함되어 있습니다.
+## Streamlit 배포
 
-## 로컬 실행
+1. Streamlit Community Cloud에서 이 저장소의 `app.py`를 선택합니다.
+2. Advanced settings의 Secrets에 아래처럼 입력합니다.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-streamlit run app.py
+```toml
+apps_script_url = "복사한_웹_앱_URL"
 ```
 
-## Streamlit Community Cloud 배포
+3. Deploy를 누릅니다.
 
-1. 이 폴더를 비공개 GitHub 저장소에 올립니다.
-2. Streamlit Community Cloud에서 저장소와 `app.py`를 선택합니다.
-3. 앱 설정의 Secrets에 Google 서비스 계정 정보를 입력합니다.
-4. 생성된 앱 링크를 학생과 학부모에게 공유합니다.
+Apps Script URL 외의 Google 인증키는 필요하지 않습니다.
 
