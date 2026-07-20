@@ -1,7 +1,7 @@
 const SPREADSHEET_ID = '여기에_관리_시트_ID를_입력하세요';
 const SHEET_NAME = '신청내역';
 const ROSTER_SHEET_NAME = '학생명렬';
-const BACKEND_VERSION = '2026-07-20-v4';
+const BACKEND_VERSION = '2026-07-20-v5';
 const ALLOWED_DATES = [
   '2026-07-27', '2026-07-28', '2026-07-29', '2026-07-30', '2026-07-31',
   '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07'
@@ -39,7 +39,9 @@ function safeText(value, maxLength) {
 
 function doGet(e) {
   if (String((e.parameter || {}).action || '') === 'status') {
-    return jsonResponse({ok: true, version: BACKEND_VERSION});
+    const roster = rosterSheet();
+    const rosterReady = Boolean(roster && roster.getLastRow() === 24);
+    return jsonResponse({ok: true, version: BACKEND_VERSION, roster_ready: rosterReady});
   }
   const requestedDate = String((e.parameter || {}).date || '');
   if (!ALLOWED_DATES.includes(requestedDate)) {
