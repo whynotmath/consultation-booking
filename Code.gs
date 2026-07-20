@@ -1,5 +1,6 @@
 const SPREADSHEET_ID = '여기에_관리_시트_ID를_입력하세요';
 const SHEET_NAME = '신청내역';
+const ROSTER_SHEET_NAME = '학생명렬';
 const ALLOWED_DATES = [
   '2026-07-27', '2026-07-28', '2026-07-29', '2026-07-30', '2026-07-31',
   '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07'
@@ -15,6 +16,18 @@ function jsonResponse(data) {
 
 function sheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+}
+
+function rosterSheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(ROSTER_SHEET_NAME);
+}
+
+function findStudent(name) {
+  const normalized = String(name || '').trim();
+  if (!normalized) return null;
+  const rows = rosterSheet().getDataRange().getDisplayValues().slice(1);
+  const match = rows.find(row => String(row[1] || '').trim() === normalized);
+  return match ? {number: String(match[0] || '').trim(), name: String(match[1] || '').trim()} : null;
 }
 
 function safeText(value, maxLength) {
@@ -46,11 +59,11 @@ function doPost(e) {
     if (!ALLOWED_APPLICANTS.includes(data.applicant) || !ALLOWED_METHODS.includes(data.method)) {
       return jsonResponse({ok: false, message: '신청자 또는 상담 방식이 올바르지 않습니다.'});
     }
-    const studentNumber = safeText(data.student_number, 10);
     const studentName = safeText(data.student_name, 20);
+    const student = findStudent(studentName);
     const phone = safeText(data.phone, 30);
-    if (!studentNumber || !studentName || !phone) {
-      return jsonResponse({ok: false, message: '학번, 학생 이름, 연락처를 모두 입력해 주세요.'});
+    if (!student || !phone) {
+      return jsonResponse({ok: false, message: '명렬표의 학생 이름과 연락처를 정확히 입력해 주세요.'});
     }
 
     lock.waitLock(10000);
@@ -61,7 +74,7 @@ function doPost(e) {
       return jsonResponse({ok: false, message: '방금 다른 신청자가 해당 시간을 선택했습니다.'});
     }
     target.appendRow([
-      safeText(data.submitted_at, 30), studentNumber, studentName, data.applicant,
+      safeText(data.submitted_at, 30), student.number, student.name, data.applicant,
       data.method, data.date, data.time, phone, safeText(data.note, 1000)
     ]);
     return jsonResponse({ok: true});
