@@ -1,0 +1,4 @@
+streamlit==1.46.1
+gspread==6.2.1
+google-auth==2.40.3
+
